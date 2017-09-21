@@ -318,11 +318,10 @@ class ShoppingList:
 		appuifw.app.title = ShoppingList.TITLE
 					
 	def about(self):
-		appuifw.note(u'Shopping list v.1.0\n * - add a product\n C - remove a current product\n	2 - up\n 8 - down\n	5 - check a current product0',
+		appuifw.note(u'Shopping list v.1.0',
 					"info")
 
 	def quit(self):
-		#if appuifw.query(u"Quit?", "query") == 1:
 		self.products.saveData()
 		appuifw.app.exit_key_handler = None
 		self.script_lock.signal()
