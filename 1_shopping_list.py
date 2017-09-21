@@ -2,16 +2,6 @@
 import xml.etree.ElementTree as ET
 import os, e32, appuifw
 
-#TODO:
-#1 Don't ask the question to quit.
-#2 Fix info menu
-#3 When the list is empty and the user adds a new product, then the new product appears in the list with the empty list mark.
-
-#TODO for next version:
-#1 Sort the products in all lists by alphabet or by departments
-#2 add ukrainian language
-
-
 EMPTY_LIST_MARK = unicode('The shopping list is empty.')
 XML_DATA_FILE = 'e:\\data\\python\\products.xml'
 
