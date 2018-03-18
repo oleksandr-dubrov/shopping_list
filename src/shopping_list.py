@@ -1,9 +1,20 @@
-#import
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+__version__ = '1.0b'
+__author__ = 'OD'
+
+import sys
 import xml.etree.ElementTree as ET
-import os, e32, appuifw
+SYMBIAN = True if sys.platform == 'symbian_s60' else False
+
+if SYMBIAN:
+	import e32  # @UnresolvedImport
+	import appuifw  # @UnresolvedImport
+else:
+	import symbian.appuifw as appuifw
 
 EMPTY_LIST_MARK = unicode('The shopping list is empty.')
-XML_DATA_FILE = 'e:\\data\\python\\products.xml'
 
 class Listbox():
 	'''Extends appyifw Listbox'''
@@ -12,11 +23,13 @@ class Listbox():
 		self.lst = init_list if len(init_list) else [EMPTY_LIST_MARK,]
 		self._ui_list = appuifw.Listbox(self.lst, cb_handler)
 	
-	def currectItem(self):
+	def current_item(self):
 		idx = self._ui_list.current()
 		return self.lst[idx]
 	
 	def add_item(self, item):
+		if len(self.lst) == 1 and self.lst[0] == EMPTY_LIST_MARK:
+			del self.lst[0]
 		self.lst.append(item)
 		self._ui_list.set_list(self.lst, self._ui_list.current())
 	
@@ -28,7 +41,8 @@ class Listbox():
 		
 	def set_list(self, lst):
 		self.lst = lst
-		self._ui_list.set_list(lst, self._ui_list.current())
+		cur = self._ui_list.current() if len(lst) else None
+		self._ui_list.set_list(lst, cur)
 		
 	def cb_focus_up(self):
 		pos = self._ui_list.current() - 1
@@ -43,13 +57,15 @@ class Listbox():
 	@property
 	def ui_list(self):
 		return self._ui_list
-		
+
+
 class Products:
 	'''Manages products, works with xml'''
 	
 	def __init__(self, xml_file):
 		self._xml_file = xml_file
 		self._departs, self._products = self._getData(xml_file)
+		print self._products
 		self.last_msg = u''
 		
 	def _getData(self, xml_file):
@@ -170,17 +186,22 @@ class Products:
 						return 0		
 		self.last_msg = u'The department is not in the list'
 		return 1
-	
+
+
 class ShoppingList:
 	''' The Application class.'''
 	
 	TITLE = u"Shopping list"
+	if SYMBIAN:
+		XML_DATA_FILE = 'e:\\data\\python\\products.xml'
+	else:
+		XML_DATA_FILE = '../db/products.xml'
 	
 	def __init__(self):
 		appuifw.app.title = ShoppingList.TITLE
 		appuifw.app.screen = "normal"
 		
-		self.products = Products(XML_DATA_FILE)
+		self.products = Products(ShoppingList.XML_DATA_FILE)
 		
 		self.products_list = Listbox(self.products.getChecked(), self.products_list_handler)
 		appuifw.app.body = self.products_list.ui_list
@@ -204,12 +225,19 @@ class ShoppingList:
 		self.product_mode = True
 
 		#next two lines lock the main thread, so they should be at the end of __init__ when everything has been created.
-		self.script_lock = e32.Ao_lock()
-		self.script_lock.wait()
+		if SYMBIAN:
+			self.script_lock = e32.Ao_lock()
+			self.script_lock.wait()
 		
 	def at_list_manager(self):
-		menu_items =	 [u'Add product',	  u'Remove product',	  u'Add departament', u'Remove departament']
-		menu_item_foo = [self.at_addProduct, self.at_removeProduct, self.at_addDepart,  self.at_removeDepart]
+		menu_items = [u'Add product',
+					u'Remove product',
+					u'Add departament',
+					u'Remove departament']
+		menu_item_foo = [self.at_addProduct,
+						self.at_removeProduct,
+						self.at_addDepart,
+						self.at_removeDepart]
 		idx = appuifw.popup_menu(menu_items)
 		if not idx == None:
 			menu_item_foo[idx]()
@@ -236,7 +264,7 @@ class ShoppingList:
 		return name
 
 	def products_list_handler(self):
-		name = self.products_list.currectItem()
+		name = self.products_list.current_item()
 		if self.product_mode:
 			#remove department name
 			if name != EMPTY_LIST_MARK:
