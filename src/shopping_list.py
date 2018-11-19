@@ -1,19 +1,91 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-__version__ = '1.0b'
+__version__ = '2.1'
 __author__ = 'OD'
 
-import sys
+
 import xml.etree.ElementTree as ET
+import ConfigParser
+import os, sys
+
 SYMBIAN = True if sys.platform == 'symbian_s60' else False
 
 if SYMBIAN:
 	import e32  # @UnresolvedImport
 	import appuifw  # @UnresolvedImport @UnusedImport
 else:
-	import symbian.appuifw as appuifw  # @Reimport
+	from symbian import appuifw # @Reimport
 
 EMPTY_LIST_MARK = unicode('The shopping list is empty.')
+
+
+class ListConfig:
+	'''The class is responsible for creating default configurations,
+	reading, and writing configurations. The config file has next structure:
+	
+	[state]
+		active_list = shopping
+	
+	[lists]
+		shopping = *path to shopping list*
+		travel = *path to treval list*
+	
+	'''
+
+	if SYMBIAN:
+		PYTHON_DIR = 'e:\\data\\python\\'
+		RESOURCES_DIR = 'resources\\list\\'
+		CONFIG_FILE = 'list.cfg'
+	else:
+		PYTHON_DIR = '..'
+		RESOURCES_DIR = '/resources/db/'
+		CONFIG_FILE = '../config/list.cfg'
+
+	@staticmethod
+	def get_path_to_resources():
+		return ListConfig.PYTHON_DIR + ListConfig. RESOURCES_DIR
+
+	@staticmethod
+	def get_path_to_config():
+		return ListConfig.get_path_to_resources() + ListConfig.CONFIG_FILE
+
+	def __init__(self):
+		self.parser = ConfigParser.RawConfigParser()
+		if len(self.parser.read(ListConfig.get_path_to_config())) == 0:
+			self.__create_defult_config()
+	
+	def __create_defult_config(self):
+		section = 'state'
+		self.parser.add_section(section)
+		self.parser.set(section, 'active_list', 'shopping')
+
+		section = 'lists'
+		resources = ListConfig.get_path_to_resources()
+		self.parser.add_section(section)
+		self.parser.set(section, 'shopping', os.path.join(resources, 'shopping_ua.xml'))
+		self.parser.set(section, 'travel', os.path.join(resources, 'travel_ua.xml'))
+		self.__update_file()
+
+	def __update_file(self):
+		f = open(ListConfig.get_path_to_config(), 'w')
+		self.parser.write(f)
+		f.close()
+
+	def get_list_file(self):
+		return self.parser.get('lists', self.get_state())
+
+	def get_lists_names(self):
+		'''returns all lists mentioned in the configuration file'''
+		options = self.parser.options('lists')
+		return options
+
+	def set_state(self, state):
+		self.parser.set('state', 'active_list', state)
+		self.__update_file()
+
+	def get_state(self):
+		return self.parser.get('state', 'active_list')
+
 
 class Listbox():
 	'''Extends appyifw Listbox'''
@@ -130,7 +202,8 @@ class Products:
 			return self.get_checked()
 		for depart in self._departs:
 			if depart['name'] == name:
-				return [prod['name'] + ': ' + name for prod in depart if self.is_product_checked(prod)]
+				return [prod['name'] for prod in depart['products']
+							if self.is_product_checked(prod)]
 		return []
 	
 	def add_product(self, name, depart_name):
@@ -177,22 +250,21 @@ class Products:
 
 
 class ShoppingList:
-	''' The Application class.'''
+	''' Shopping list 
+	Select products to buy in 'At home' menu.
+	Show selected products by departments in 'By departments'.
+	In 'Modify the list' add or remove a product or department.
+	In main menu 2 and 8 are navigation keys, 5 - select.
+	'''
 	
-	TITLE = u"Shopping list"
-	if SYMBIAN:
-		JSON_DATA_FILE = 'e:\\data\\python\\products.xml'
-	else:
-		JSON_DATA_FILE = '../db/products.xml'
-	
+	TITLE = u"The list."
+
 	def __init__(self):
 		appuifw.app.title = ShoppingList.TITLE
 		appuifw.app.screen = "normal"
 		
-		self.products = Products(ShoppingList.JSON_DATA_FILE)
-		
-		self.products_list = Listbox(self.products.get_checked(), self.products_list_handler)
-		appuifw.app.body = self.products_list.ui_list
+		self.config = ListConfig()
+		self._load_products_to_the_list()
 		self.products_list.ui_list.bind(0x35, self.products_list_handler) #bind the handler to key 5
 		self.products_list.ui_list.bind(0x32, self.products_list.cb_focus_up) #bind the handler to key 2
 		self.products_list.ui_list.bind(0x38, self.products_list.cb_focus_down) #bind the handler to key 8
@@ -208,6 +280,7 @@ class ShoppingList:
 							(u'At home', self.at_home),
 							(u'By departments', self.at_mode), # this position is fixed!
 							(u'Modify the list', self.at_list_manager),
+							(u'Select list', self.at_select_list),
 							(u'Info', self.about),
 							]
 		self.product_mode = True
@@ -229,19 +302,27 @@ class ShoppingList:
 		idx = appuifw.popup_menu(menu_items)
 		if not idx == None:
 			menu_item_foo[idx]()
-			
+
 	def at_mode(self):
 		if self.product_mode:
-			appuifw.app.title = u"Shopping list. Departments." 
-			appuifw.app.menu[1] = (u'All products', self.at_mode)
+			appuifw.app.title = appuifw.app.title + u" Departments." 
+			appuifw.app.menu[1] = (u'All goods', self.at_mode)
 			self.products_list.set_list([u'-- All departments',] + self.products.get_departs_list())
 			self.product_mode = False
 		else:
-			appuifw.app.title = ShoppingList.TITLE
+			#'all goods' selected
+			appuifw.app.title = self.__compose_the_title()
 			appuifw.app.menu[1] = (u'By departments', self.at_mode)
 			self.products_list.set_list(self.products.get_checked())
 			self.product_mode = True
-		
+
+	def at_select_list(self):
+		menu_items = [unicode(x) for x in self.config.get_lists_names()]
+		idx = appuifw.popup_menu(menu_items)
+		if idx is not None:
+			self.config.set_state(menu_items[idx])
+			self._load_products_to_the_list()
+
 	def _removeDepName(self, full_name):
 		#full name means product: department
 		pos = full_name.find(u':')
@@ -251,6 +332,16 @@ class ShoppingList:
 			name = full_name
 		return name
 
+	def _load_products_to_the_list(self):
+		self.products = Products(self.config.get_list_file())
+		
+		self.products_list = Listbox(self.products.get_checked(), self.products_list_handler)
+		appuifw.app.body = self.products_list.ui_list
+		appuifw.app.title = self.__compose_the_title()
+
+	def __compose_the_title(self):
+		return u"%s %s"%(ShoppingList.TITLE, self.config.get_state().title())
+	
 	def products_list_handler(self):
 		name = self.products_list.current_item()
 		if self.product_mode:
@@ -261,17 +352,18 @@ class ShoppingList:
 		else:
 			lst = self.products.get_checked_by_dep(name if not name.startswith(u'--') else None)
 			self.products_list.set_list(lst if len(lst) else [EMPTY_LIST_MARK,])
+			appuifw.app.menu[1] = (u'By departments', self.at_mode)
+			appuifw.app.title = self.__compose_the_title() + u'. ' + name
 			self.product_mode = True
-			appuifw.app.title = u"Shopping list. %.", name
 		
 	def run(self):
 		pass
 	
 	def at_home(self):
-		appuifw.app.title = u"At home. Select a product to buy."
+		appuifw.app.title = u"At home. Select goods."
 		unchecked = self.products.get_unchecked()
 		if len(unchecked) == 0:
-			appuifw.note(u"Everything has been added to the shopping list.", "info")
+			appuifw.note(u"Everything has been added to the list.", "info")
 		else:
 			idxs = appuifw.multi_selection_list(unchecked, style='checkbox', search_field=1)
 			for idx in idxs:
@@ -283,17 +375,17 @@ class ShoppingList:
 		self.at_mode()
 	
 	def at_addProduct(self):
-		appuifw.app.title = u'Add a new product. Select a department.'
+		appuifw.app.title = u'Add a new item. Select a department.'
 		departs = self.products.get_departs_list()
 		idx = appuifw.selection_list(departs, search_field=1)
 		if not idx == None:
 			depart_name = departs[idx]
-			appuifw.app.title = u'Add a new product.'
-			prod_name = appuifw.query(u'Enter a product name.', 'text')
+			appuifw.app.title = u'Add a new item.'
+			prod_name = appuifw.query(u'Enter an item name.', 'text')
 			if prod_name and not u':' in prod_name: # : used to separate product name and department in 'by depart' mode
 				if not prod_name.lower() in self.products.get_all_products():
 					if self.products.add_product(prod_name.lower(), depart_name):#return 1 - cannot add, otherwise - 0
-						appuifw.note(u"Cannot add the product.\n%s"%self.products.last_msg, "error")
+						appuifw.note(u"Cannot add the item.\n%s"%self.products.last_msg, "error")
 					else:
 						self.products_list.add_item(prod_name.lower())
 				else:
@@ -305,7 +397,7 @@ class ShoppingList:
 		appuifw.app.title = ShoppingList.TITLE
 		
 	def at_removeProduct(self):
-		appuifw.app.title = u'Remove a new product. Select a department.'
+		appuifw.app.title = u'Remove goods. Select a department.'
 		lst = self.products.get_all_products()
 		idx = appuifw.selection_list(lst, search_field=1)
 		if not idx == None:
@@ -336,7 +428,7 @@ class ShoppingList:
 		appuifw.app.title = ShoppingList.TITLE
 					
 	def about(self):
-		appuifw.note(u'Shopping list v.1.0',
+		appuifw.note(u'The list v.%s'%__version__,
 					"info")
 
 	def quit(self):
