@@ -1,8 +1,16 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import os
+import sys
 import unittest
 import __builtin__
-import src.symbian.appuifw as appuifw
 
-from src.shopping_list import ShoppingList
+sys.path.insert(0, os.path.abspath('../src'))
+
+import symbian.appuifw as appuifw
+from shopping_list import ShoppingList
+
 
 class Shopping_list_tester(unittest.TestCase):
     '''The main tester'''
@@ -79,3 +87,7 @@ class Shopping_list_tester(unittest.TestCase):
         self.sut.products.put_in_list('prod22')
         self.assertEqual([u'prod11', u'prod12', u'prod21', u'prod22'],
                          self.sut.products.get_checked())
+
+
+if __name__ == "__main__":
+    unittest.main()

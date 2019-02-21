@@ -64,8 +64,18 @@ class Canvas:
 
 class Listbox:
     def __init__(self, lst, handler):
+        self.lst = lst
+        self.cur_idx = 0
+
+    def bind(self, num, callback):
         pass
 
+    def current(self):
+        return self.cur_idx
+
+    def set_list(self, lst, cur_idx):
+        self.lst = lst
+        self.cur_idx = cur_idx
 
 def note(text, tp):
     print ("Note %s: %s" % (text, tp))

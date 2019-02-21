@@ -38,8 +38,8 @@ class ListConfig:
 		CONFIG_FILE = 'list.cfg'
 	else:
 		PYTHON_DIR = '..'
-		RESOURCES_DIR = '/resources/db/'
-		CONFIG_FILE = '../config/list.cfg'
+		RESOURCES_DIR = '/db/'
+		CONFIG_FILE = '../db/list.cfg'
 
 	@staticmethod
 	def get_path_to_resources():
@@ -132,12 +132,22 @@ class Listbox():
 
 class Products:
 	'''Manages products, works with xml'''
-	
+
+	HEADER = '<?xml version="1.0" encoding="utf-8"?><products></products>'
+
 	def __init__(self, xml_file):
-		self._xml_file = xml_file
+		self._xml_file = self._make_sure(xml_file)
 		self._departs = self._getData()
 		self.last_msg = u''
-	
+
+	def _make_sure(self, filepath):
+		'''if the given filepath is not a file, create one with the XML header.'''
+		if not (os.path.exists(filepath) and os.path.isfile(filepath)):
+			f = open(filepath, 'w')
+			f.write(Products.HEADER)
+			f.close()
+		return  filepath
+
 	def _getData(self):
 		# Get a list of products.
 		# Each product is a dict with a name and a flag (is in list)
@@ -255,6 +265,8 @@ class ShoppingList:
 	Show selected products by departments in 'By departments'.
 	In 'Modify the list' add or remove a product or department.
 	In main menu 2 and 8 are navigation keys, 5 - select.
+
+    You can select among travel or shopping list.
 	'''
 	
 	TITLE = u"The list."
