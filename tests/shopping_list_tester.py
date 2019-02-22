@@ -15,6 +15,9 @@ from shopping_list import ShoppingList
 class Shopping_list_tester(unittest.TestCase):
     '''The main tester'''
 
+    # specify a path to xml; it should be the same as in list.cfg
+    XML = os.path.join('test_shopping.xml')
+
     def mock_raw_input(self, vals):
         gen = iter(vals)
 
@@ -22,13 +25,12 @@ class Shopping_list_tester(unittest.TestCase):
             return gen.next()
         __builtin__.raw_input = raw
 
-    def resetXml(self):
-        with open(ShoppingList.JSON_DATA_FILE, 'w') as f:
+    def resetXml(self, path):
+        with open(path, 'w') as f:
             f.write('<products></products>')
 
     def setUp(self):
-        ShoppingList.JSON_DATA_FILE = '../db/test_products.xml'
-        self.resetXml()
+        self.resetXml(Shopping_list_tester.XML)
         self.sut = ShoppingList()
         self.mock_raw_input(['dep1',
                              0, 'prod11',
@@ -45,13 +47,18 @@ class Shopping_list_tester(unittest.TestCase):
         self.sut.at_add_product()
         self.sut.at_add_product()
 
+    def tearDown(self):
+        if os.path.isfile(Shopping_list_tester.XML):
+            os.remove(Shopping_list_tester.XML)
+
     def test_test(self):
-        print self.sut.products_list.lst
-        print self.sut.products.get_all_products()
-        print self.sut.products.departments
-        print self.sut.products.get_checked()
-        print self.sut.products.get_unchecked()
-        print self.sut.products.get_departs_list()
+        '''base test case'''
+        self.sut.products_list.lst
+        self.sut.products.get_all_products()
+        self.sut.products.departments
+        self.sut.products.get_checked()
+        self.sut.products.get_unchecked()
+        self.sut.products.get_departs_list()
 
     def test_show_all_after_depart(self):
         self.sut.at_mode()

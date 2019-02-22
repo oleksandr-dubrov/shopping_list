@@ -40,8 +40,8 @@ class ListConfig:
 		CONFIG_FILE = 'list.cfg'
 	else:
 		PYTHON_DIR = '..'
-		RESOURCES_DIR = '/db/'
-		CONFIG_FILE = '../db/list.cfg'
+		RESOURCES_DIR = '/tests/'
+		CONFIG_FILE = '../tests/list.cfg'
 
 	@staticmethod
 	def get_path_to_resources():

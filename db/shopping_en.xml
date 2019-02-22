@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<products>
+   <department name="Fruits and Vegetables">
+      <product inlist="0" name="cucumber" />
+      <product inlist="0" name="tomato" />
+      <product inlist="1" name="cabbage" />
+      <product inlist="0" name="carrot" />
+      <product inlist="0" name="orange" />
+      <product inlist="0" name="lemon" />
+      <product inlist="0" name="banana" />
+   <product inlist="0" name="onion" /><product inlist="0" name="apple" /><product inlist="0" name="pepper" /><product inlist="0" name="peach" /><product inlist="0" name="watermelon" /><product inlist="0" name="mushrooms" /></department>
+   <department name="Canned">
+      <product inlist="0" name="peas" />
+      <product inlist="0" name="corn" />
+      <product inlist="0" name="fish" />
+      <product inlist="0" name="beef" />
+   </department>
+   <department name="Bakery">
+      <product inlist="0" name="bread" />
+      <product inlist="0" name="breakfast cereals" />
+   <product inlist="0" name="biscuit" /><product inlist="0" name="sugar" /><product inlist="0" name="sunflower oil" /><product inlist="0" name="macaroni" /></department>
+   <department name="Eggs and sausages">
+      <product inlist="0" name="eggs" />
+      <product inlist="0" name="sausages" />
+   </department>
+   <department name="Drinks">
+      <product inlist="0" name="juice" />
+      <product inlist="0" name="water" />
+   <product inlist="0" name="coffee" /><product inlist="0" name="tea" /></department>
+   <department name="Groats">
+      <product inlist="0" name="rice" />
+      <product inlist="0" name="buckwheat" />
+      <product inlist="0" name="porridge" />
+      <product inlist="0" name="pasta" />
+   </department>
+   <department name="Frozen">
+      <product inlist="0" name="broccoli" />
+      <product inlist="0" name="pelmeni" />
+      <product inlist="0" name="varenyky" />
+   </department>
+   <department name="Sauces">
+      <product inlist="0" name="sauces" />
+   </department>
+   <department name="Dairy">
+      <product inlist="0" name="milk" />
+      <product inlist="0" name="cheese" />
+      <product inlist="0" name="kefir" />
+      <product inlist="0" name="yogurt" />
+   <product inlist="0" name="butter" /></department>
+   <department name="Alcoholic">
+      <product inlist="0" name="beer" />
+      <product inlist="0" name="wine" />
+      <product inlist="0" name="cognac" />
+   </department>
+   <department name="Household chemicals">
+      <product inlist="0" name="toilet fresheners" />
+      <product inlist="0" name="air freshener" />
+      <product inlist="0" name="laundry detergent" />
+      <product inlist="0" name="laundry conditioner" />
+   <product inlist="0" name="monitor cleaner" /><product inlist="0" name="toilet cleaner" /><product inlist="0" name="floor detergent" /></department>
+   <department name="Hygiene">
+      <product inlist="0" name="dish soap" />
+      <product inlist="0" name="toilet paper" />
+      <product inlist="0" name="toothbrush" />
+      <product inlist="0" name="toothpaste" />
+   <product inlist="0" name="soap" /><product inlist="0" name="antiperspirant" /><product inlist="0" name="dental floss" /><product inlist="0" name="cotton swabs" /><product inlist="0" name="antiseptic for hands" /><product inlist="1" name="see salt" /><product inlist="0" name="mouthwash" /></department>
+<department name="Pharmacy"><product inlist="0" name="strepsils" /><product inlist="0" name="lamikon" /></department><department name="Household"><product inlist="0" name="glue" /><product inlist="0" name="napkins" /><product inlist="0" name="water filter" /><product inlist="0" name="trash begs" /><product inlist="0" name="adhesive tape" /><product inlist="0" name="food film" /></department><department name="Confectionery"><product inlist="0" name="chocolate bar" /><product inlist="0" name="candies" /></department><department name="Seasonings"><product inlist="0" name="salt" /><product inlist="0" name="bay leaf" /></department></products>
