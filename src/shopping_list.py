@@ -334,6 +334,7 @@ class ShoppingList:
 		menu_items = [unicode(x) for x in self.config.get_lists_names()]
 		idx = appuifw.popup_menu(menu_items)
 		if idx is not None:
+			self.products.save_data()
 			self.config.set_state(menu_items[idx])
 			self._load_products_to_the_list()
 

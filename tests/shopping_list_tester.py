@@ -16,7 +16,8 @@ class Shopping_list_tester(unittest.TestCase):
     '''The main tester'''
 
     # specify a path to xml; it should be the same as in list.cfg
-    XML = os.path.join('test_shopping.xml')
+    XML = [os.path.join('test_shopping.xml'),
+           os.path.join('test_travel.xml')]
 
     def mock_raw_input(self, vals):
         gen = iter(vals)
@@ -25,9 +26,10 @@ class Shopping_list_tester(unittest.TestCase):
             return gen.next()
         __builtin__.raw_input = raw
 
-    def resetXml(self, path):
-        with open(path, 'w') as f:
-            f.write('<products></products>')
+    def resetXml(self, paths):
+        for p in paths:
+            with open(p, 'w') as f:
+                f.write('<products></products>')
 
     def setUp(self):
         self.resetXml(Shopping_list_tester.XML)
@@ -38,7 +40,10 @@ class Shopping_list_tester(unittest.TestCase):
                              'dep2',
                              1, 'prod21',
                              1, 'prod22',
-                             ])
+                             'trev_dep1',
+                             0, 'trev_prod21',
+                             1, 'trev_prod22',               
+        ])
         self.sut.at_add_depart()
         self.sut.at_add_product()
         self.sut.at_add_product()
@@ -46,10 +51,23 @@ class Shopping_list_tester(unittest.TestCase):
         self.sut.at_add_depart()
         self.sut.at_add_product()
         self.sut.at_add_product()
+
+        self.sut.config.set_state('travel')
+        self.sut.products.save_data()
+        self.sut._load_products_to_the_list()
+
+        self.sut.at_add_depart()
+        self.sut.at_add_product()
+        self.sut.at_add_product()
+
+        self.sut.config.set_state('shopping')
+        self.sut.products.save_data()
+        self.sut._load_products_to_the_list()
 
     def tearDown(self):
-        if os.path.isfile(Shopping_list_tester.XML):
-            os.remove(Shopping_list_tester.XML)
+        for p in Shopping_list_tester.XML:
+            if os.path.isfile(p):
+                os.remove(p)
 
     def test_test(self):
         '''base test case'''
@@ -62,7 +80,7 @@ class Shopping_list_tester(unittest.TestCase):
 
     def test_show_all_after_depart(self):
         self.sut.at_mode()
-        self.failIf(appuifw.app.title != u"The list. Departments.")
+        self.assertEqual(appuifw.app.title, u"The list. Shopping Departments.")
         self.failIf(self.sut.products_list.lst[0] != u'-- All departments')
 
         self.sut.at_mode()
