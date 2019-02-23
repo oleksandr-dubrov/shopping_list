@@ -127,6 +127,8 @@ def multi_selection_list(lst, style='checkbox', search_field=0):
         multi_selection_list(lst, style='checkbox', search_field=search_field)
     return ret
 
+def popup_menu(lst):
+    return 0
 
 EKeyLeftSoftkey = 0x01
 EKeyYes = 0x02

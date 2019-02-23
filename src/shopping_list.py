@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-__version__ = '2.1'
+__version__ = '2.2'
 __author__ = 'OD'
+__license__ = 'MIT'
 
 
 import ConfigParser
@@ -90,7 +91,7 @@ class ListConfig:
 
 
 class Listbox():
-	'''Extends appyifw Listbox'''
+	'''Extends appuifw Listbox'''
 
 	def __init__(self, init_list, cb_handler):
 		self.lst = init_list if len(init_list) else [EMPTY_LIST_MARK, ]
@@ -128,6 +129,22 @@ class Listbox():
 		if pos > len(self.lst) - 1:
 			pos = 0
 		self._ui_list.set_list(self.lst, pos)
+
+	def cb_move_up(self):
+		pos = self._ui_list.current()
+		if not pos == 0:
+			t = self.lst[pos]
+			del self.lst[pos]
+			self.lst.insert(pos-1, t)
+			self._ui_list.set_list(self.lst, pos-1)
+
+	def cb_move_down(self):
+		pos = self._ui_list.current()
+		if not pos == len(self.lst) - 1:
+			t = self.lst[pos]
+			del self.lst[pos]
+			self.lst.insert(pos+1, t)
+			self._ui_list.set_list(self.lst, pos+1)
 
 	@property
 	def ui_list(self):
@@ -262,6 +279,15 @@ class Products:
 				return 0
 		return 1
 
+	def sync_departments_order(self, lst):
+		assert len(lst) == len(self._departs) + 1, 'It seems lst is not departments'
+		new_departs = []
+		for x in lst:
+			for y in self._departs:
+				if y['name'] == x:
+					new_departs.append(y)
+		self._departs = new_departs
+
 
 class ShoppingList:
 	''' Shopping list
@@ -294,6 +320,7 @@ class ShoppingList:
 							(u'By departments', self.at_mode),  # this position is fixed!
 							(u'Modify the list', self.at_list_manager),
 							(u'Select list', self.at_select_list),
+							(u'Help', self.at_help),
 							(u'Info', self.about),
 						]
 		self.product_mode = True
@@ -324,7 +351,9 @@ class ShoppingList:
 			self.products_list.set_list([u'-- All departments', ] + self.products.get_departs_list())
 			self.product_mode = False
 		else:
-			# 'all goods' selected
+			# 'all goods' selected or return from home
+			if len(self.products_list.lst) and '--' in self.products_list.lst[0]:
+				self.products.sync_departments_order(self.products_list.lst)
 			appuifw.app.title = self.__compose_the_title()
 			appuifw.app.menu[1] = (u'By departments', self.at_mode)
 			self.products_list.set_list(self.products.get_checked())
@@ -338,7 +367,7 @@ class ShoppingList:
 			self.config.set_state(menu_items[idx])
 			self._load_products_to_the_list()
 
-	def _removeDepName(self, full_name):
+	def _remove_dep_name(self, full_name):
 		# full name means product: department
 		pos = full_name.find(u':')
 		if pos > 0:
@@ -351,15 +380,26 @@ class ShoppingList:
 		self.products = Products(self.config.get_list_file())
 
 		self.products_list = Listbox(self.products.get_checked(), self.products_list_handler)
+
 		# bind the handler to key 5
 		self.products_list.ui_list.bind(0x35, self.products_list_handler)
-		# bind the handler to key 2
-		self.products_list.ui_list.bind(0x32, self.products_list.cb_focus_up)
-		# bind the handler to key 8
-		self.products_list.ui_list.bind(0x38, self.products_list.cb_focus_down)
+		self._bind_cursor_movements(self.products_list)
+		self._bind_move_up_down(self.products_list)
 
 		appuifw.app.body = self.products_list.ui_list
 		appuifw.app.title = self.__compose_the_title()
+
+	def _bind_cursor_movements(self, lst):
+		# bind the handler to key 2
+		lst.ui_list.bind(0x32, self.products_list.cb_focus_up)
+		# bind the handler to key 8
+		lst.ui_list.bind(0x38, self.products_list.cb_focus_down)
+
+	def _bind_move_up_down(self, lst):
+		# bind the handler to key 7
+		lst.ui_list.bind(0x37, self.products_list.cb_move_up)
+		# bind the handler to key 9
+		lst.ui_list.bind(0x39, self.products_list.cb_move_down)
 
 	def __compose_the_title(self):
 		return u"%s %s" % (ShoppingList.TITLE, self.config.get_state().title())
@@ -369,9 +409,10 @@ class ShoppingList:
 		if self.product_mode:
 			# remove department name
 			if name != EMPTY_LIST_MARK:
-				self.products.put_out_list(self._removeDepName(name))
+				self.products.put_out_list(self._remove_dep_name(name))
 				self.products_list.remove_item(name)
 		else:
+			self.products.sync_departments_order(self.products_list.lst)
 			lst = self.products.get_checked_by_dep(name if not name.startswith(u'--') else None)
 			self.products_list.set_list(lst if len(lst) else [EMPTY_LIST_MARK, ])
 			appuifw.app.menu[1] = (u'By departments', self.at_mode)
@@ -450,6 +491,33 @@ class ShoppingList:
 				if self.products.remove_depart(depart_name):
 					appuifw.note(u"%s" % self.products.last_msg, "error")
 		appuifw.app.title = ShoppingList.TITLE
+
+	def at_back(self):
+		assert hasattr(self, '_previous_app'), 'No previous app attributes'
+		appuifw.app.title = self._previous_app['title']
+		appuifw.app.body = self._previous_app['body']
+		appuifw.app.menu = self._previous_app['menu']
+
+	def at_help(self):
+		help_f = os.path.join(ListConfig.get_path_to_resources(), 'help.txt')
+		if os.path.isfile(help_f):
+			f = open(help_f, 'r')
+			lns = [unicode(x.lstrip()) for x in f.readlines()]
+			f.close()
+			def empty_handler():
+				return
+			help_list = Listbox(lns[1:], empty_handler)
+			self._bind_cursor_movements(help_list)
+			self._previous_app = {
+				'title': appuifw.app.title,
+				'body': appuifw.app.body,
+				'menu': appuifw.app.menu,
+			}
+			appuifw.app.title = lns[0]
+			appuifw.app.body = help_list.ui_list
+			appuifw.app.menu = [ (u'Back', self.at_back) ]
+		else:
+			appuifw.note(u'The list v.%s' % __version__, "error")
 
 	def about(self):
 		appuifw.note(u'The list v.%s' % __version__, "info")
