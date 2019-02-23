@@ -1,0 +1,16 @@
+The list is a checklist.
+Option-back - to return.
+Options.
+ - At home - go to list of all items.
+ - By departments - go to list of all departments.
+ - All goods - return from the list of departments.
+ - Modify the list - add or remove an item or a department.
+ - Select list - select a list to work with (shopping or travel)
+ - Help - show this help.
+ - Info - show info.
+Hot keys.
+ - 2 - cursor up
+ - 5 - select
+ - 8 - cursor down
+ - 7 - move item up
+ - 9 - move item down
