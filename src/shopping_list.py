@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-__version__ = '2.2'
+__version__ = '2.3'
 __author__ = 'OD'
 __license__ = 'MIT'
 
@@ -502,22 +502,23 @@ class ShoppingList:
 		help_f = os.path.join(ListConfig.get_path_to_resources(), 'help.txt')
 		if os.path.isfile(help_f):
 			f = open(help_f, 'r')
-			lns = [unicode(x.lstrip()) for x in f.readlines()]
+			text = unicode(f.read())
 			f.close()
-			def empty_handler():
-				return
-			help_list = Listbox(lns[1:], empty_handler)
-			self._bind_cursor_movements(help_list)
+			t = appuifw.Text()
+			t.font = u"LatinPlain8"  # sets font to Latin Plain 8
+			t.color = (0, 0, 0)  # blue
+			t.set(text)
+			t.set_pos(0)
 			self._previous_app = {
 				'title': appuifw.app.title,
 				'body': appuifw.app.body,
 				'menu': appuifw.app.menu,
 			}
-			appuifw.app.title = lns[0]
-			appuifw.app.body = help_list.ui_list
+			appuifw.app.title = u'Help'
+			appuifw.app.body = t
 			appuifw.app.menu = [ (u'Back', self.at_back) ]
 		else:
-			appuifw.note(u'The list v.%s' % __version__, "error")
+			appuifw.note(u'No help found in the resources', "error")
 
 	def about(self):
 		appuifw.note(u'The list v.%s' % __version__, "info")
