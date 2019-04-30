@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
 __version__ = '2.3'
 __author__ = 'OD'
 __license__ = 'MIT'
@@ -115,7 +116,7 @@ class Listbox():
 
 	def set_list(self, lst):
 		self.lst = lst
-		cur = self._ui_list.current() if len(lst) else None
+		cur = self._ui_list.current() if len(lst) else 0
 		self._ui_list.set_list(lst, cur)
 
 	def cb_focus_up(self):
@@ -475,8 +476,7 @@ class ShoppingList:
 	def at_add_depart(self):
 		appuifw.app.title = u'Add a new department.'
 		depart_name = appuifw.query(u'Add a depart name.', 'text')
-		if depart_name:
-			if self.products.add_depart(depart_name):
+		if depart_name and self.products.add_depart(depart_name):
 				appuifw.note(u'%s' % self.products.last_msg, 'error')
 		appuifw.app.title = ShoppingList.TITLE
 		appuifw.note(u'%s added.' % depart_name, 'info')
@@ -487,8 +487,8 @@ class ShoppingList:
 		idx = appuifw.selection_list(lst, search_field=1)
 		if not idx == None:
 			depart_name = lst[idx]
-			if appuifw.query(u"Remove %s?" % depart_name, "query") == 1:
-				if self.products.remove_depart(depart_name):
+			if appuifw.query(u"Remove %s?" % depart_name, "query") == 1 \
+				and self.products.remove_depart(depart_name):
 					appuifw.note(u"%s" % self.products.last_msg, "error")
 		appuifw.app.title = ShoppingList.TITLE
 
