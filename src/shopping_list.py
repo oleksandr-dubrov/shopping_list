@@ -20,7 +20,7 @@ else:
 	from symbian import appuifw  # @Reimport
 
 
-EMPTY_LIST_MARK = unicode('The shopping list is empty.')
+EMPTY_LIST_MARK = unicode('The list is empty.')
 
 
 class ListConfig:
@@ -115,9 +115,8 @@ class Listbox():
 		self._ui_list.set_list(self.lst, self._ui_list.current())
 
 	def set_list(self, lst):
-		self.lst = lst
-		cur = self._ui_list.current() if len(lst) else 0
-		self._ui_list.set_list(lst, cur)
+		self.lst = lst if len(lst) else [EMPTY_LIST_MARK, ]
+		self._ui_list.set_list(self.lst, self._ui_list.current())
 
 	def cb_focus_up(self):
 		pos = self._ui_list.current() - 1
@@ -156,6 +155,8 @@ class Products:
 	'''Manages products, works with xml'''
 
 	HEADER = '<?xml version="1.0" encoding="utf-8"?><products></products>'
+	DEP_WITH_CHECKED_MARKER = u'* '
+	ALL_DEPARTMENTS = u'-- All departments'
 
 	def __init__(self, xml_file):
 		self._xml_file = self._make_sure(xml_file)
@@ -227,9 +228,25 @@ class Products:
 		return [unicode(x['name']) for x in self._products() if not self.is_product_checked(x)]
 
 	def get_departs_list(self):
-		return [unicode(x['name']) for x in self._departs]
+		''' get list of departments, mark departments with checked products'''
+		to_be_marked = self._get_departs_list_with_checked_prods()
+		all_deps = [unicode(x['name']) for x in self._departs]
+		for x in range(len(all_deps)):
+			if all_deps[x] in to_be_marked:
+				all_deps[x] = Products.DEP_WITH_CHECKED_MARKER + all_deps[x]
+		return all_deps
+
+	def _get_departs_list_with_checked_prods(self):
+		ret = []
+		for d in self._departs:
+			for p in d['products']:
+				if p['chk'] == '1':
+					ret.append(d['name'])
+					break
+		return ret
 
 	def get_checked_by_dep(self, name):
+		name = self._udecorate_item(name)
 		if not name:
 			return self.get_checked()
 		for depart in self._departs:
@@ -266,11 +283,15 @@ class Products:
 		if name in [x['name'] for x in self._departs]:
 			self.last_msg = u'A department with name %s has been in the list' % name
 			return 1
+		if name.startswith(Products.DEP_WITH_CHECKED_MARKER):
+			self.last_msg = u'Invalid department name %s' % name
+			return 1
 		new_dep = {'name': name, 'products': []}
 		self._departs.append(new_dep)
 		return 0
 
 	def remove_depart(self, name):
+		name = self._udecorate_item(name)
 		if name not in [x['name'] for x in self._departs]:
 			self.last_msg = u'A department with name %s is not in the list' % name
 			return 1
@@ -280,14 +301,34 @@ class Products:
 				return 0
 		return 1
 
+	def _udecorate_item(self, i):
+		if i.startswith(Products.DEP_WITH_CHECKED_MARKER):
+			return i[len(Products.DEP_WITH_CHECKED_MARKER): ]
+		elif not i.startswith(u'--'):
+			return i
+		return None
+
+	def _undecorate_list(self, lst):
+		'''remove markers from each item'''
+		new_lst = []
+		for l in lst:
+			l = self._udecorate_item(l)
+			if l:
+				new_lst.append(l)
+		return new_lst
+
 	def sync_departments_order(self, lst):
 		assert len(lst) == len(self._departs) + 1, 'It seems lst is not departments'
+		lst = self._undecorate_list(lst)
 		new_departs = []
 		for x in lst:
 			for y in self._departs:
 				if y['name'] == x:
 					new_departs.append(y)
 		self._departs = new_departs
+	
+	def is_departments_in_list(self, lst):
+		return Products.ALL_DEPARTMENTS in lst
 
 
 class ShoppingList:
@@ -301,6 +342,7 @@ class ShoppingList:
 	'''
 
 	TITLE = u"The list."
+	BY_DEPARTMENTS = u'By departments'
 
 	def __init__(self):
 		appuifw.app.title = ShoppingList.TITLE
@@ -309,16 +351,16 @@ class ShoppingList:
 		self.config = ListConfig()
 		self._load_products_to_the_list()
 
-		# an experiment with C and pancil
 		self.products_list.ui_list.bind(0x8, self.at_remove_product)  # C key
 		# WARNING: don't use pencil because the button starts its own menu right after dialog open
 		# self.products_list.ui_list.bind(0xf80b, self.at_add_product) # pencil key
 		self.products_list.ui_list.bind(0x2a, self.at_add_product)  # * key
+		self.products_list.ui_list.bind(0x30, self.at_mode)
 
 		appuifw.app.exit_key_handler = self.quit
 		appuifw.app.menu = [
 							(u'At home', self.at_home),
-							(u'By departments', self.at_mode),  # this position is fixed!
+							(ShoppingList.BY_DEPARTMENTS, self.at_mode),  # this position is fixed!
 							(u'Modify the list', self.at_list_manager),
 							(u'Select list', self.at_select_list),
 							(u'Help', self.at_help),
@@ -349,14 +391,16 @@ class ShoppingList:
 		if self.product_mode:
 			appuifw.app.title = appuifw.app.title + u" Departments."
 			appuifw.app.menu[1] = (u'All goods', self.at_mode)
-			self.products_list.set_list([u'-- All departments', ] + self.products.get_departs_list())
+			all_deps = self.products.get_departs_list()
+			self.products_list.set_list([Products.ALL_DEPARTMENTS, ] + all_deps)
 			self.product_mode = False
 		else:
 			# 'all goods' selected or return from home
-			if len(self.products_list.lst) and '--' in self.products_list.lst[0]:
-				self.products.sync_departments_order(self.products_list.lst)
+			if len(self.products_list.lst) \
+				and self.products.is_departments_in_list(self.products_list.lst):
+					self.products.sync_departments_order(self.products_list.lst)
 			appuifw.app.title = self.__compose_the_title()
-			appuifw.app.menu[1] = (u'By departments', self.at_mode)
+			appuifw.app.menu[1] = (ShoppingList.BY_DEPARTMENTS, self.at_mode)
 			self.products_list.set_list(self.products.get_checked())
 			self.product_mode = True
 
@@ -414,14 +458,11 @@ class ShoppingList:
 				self.products_list.remove_item(name)
 		else:
 			self.products.sync_departments_order(self.products_list.lst)
-			lst = self.products.get_checked_by_dep(name if not name.startswith(u'--') else None)
+			lst = self.products.get_checked_by_dep(name)
 			self.products_list.set_list(lst if len(lst) else [EMPTY_LIST_MARK, ])
-			appuifw.app.menu[1] = (u'By departments', self.at_mode)
+			appuifw.app.menu[1] = (ShoppingList.BY_DEPARTMENTS, self.at_mode)
 			appuifw.app.title = self.__compose_the_title() + u'. ' + name
 			self.product_mode = True
-
-	def run(self):
-		pass
 
 	def at_home(self):
 		appuifw.app.title = u"At home. Select goods."
@@ -531,4 +572,4 @@ class ShoppingList:
 
 
 if __name__ == '__main__':
-	ShoppingList().run()
+	ShoppingList()
