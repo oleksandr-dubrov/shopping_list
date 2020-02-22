@@ -1,23 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__version__ = '2.3'
+__version__ = '2.5'
 __author__ = 'OD'
 __license__ = 'MIT'
 
 
 import ConfigParser
 import os
-import sys
 import xml.etree.ElementTree as ET
 
-SYMBIAN = True if sys.platform == 'symbian_s60' else False
-
-if SYMBIAN:
-	import e32  # @UnresolvedImport
-	import appuifw  # @UnresolvedImport @UnusedImport
-else:
-	from symbian import appuifw  # @Reimport
+import e32  # @UnresolvedImport
+import appuifw  # @UnresolvedImport @UnusedImport
 
 
 EMPTY_LIST_MARK = unicode('The list is empty.')
@@ -25,25 +19,21 @@ EMPTY_LIST_MARK = unicode('The list is empty.')
 
 class ListConfig:
 	'''The class is responsible for creating default configurations,
-	reading, and writing configurations. The config file has next structure:
+	reading, and writing configurations.
+	The configuration file has next structure:
 
 	[state]
 		active_list = shopping
 
 	[lists]
 		shopping = *path to shopping list*
-		travel = *path to treval list*
+		travel = *path to travel list*
 
 	'''
 
-	if SYMBIAN:
-		PYTHON_DIR = 'e:\\data\\python\\'
-		RESOURCES_DIR = 'resources\\list\\'
-		CONFIG_FILE = 'list.cfg'
-	else:
-		PYTHON_DIR = '..'
-		RESOURCES_DIR = '/tests/'
-		CONFIG_FILE = '../tests/list.cfg'
+	PYTHON_DIR = 'e:\\data\\python\\'
+	RESOURCES_DIR = 'resources\\list\\'
+	CONFIG_FILE = 'list.cfg'
 
 	@staticmethod
 	def get_path_to_resources():
@@ -370,9 +360,8 @@ class ShoppingList:
 
 		# next two lines lock the main thread, so they should be at the end
 		# of __init__ when everything has been created.
-		if SYMBIAN:
-			self.script_lock = e32.Ao_lock()
-			self.script_lock.wait()
+		self.script_lock = e32.Ao_lock()
+		self.script_lock.wait()
 
 	def at_list_manager(self):
 		menu_items = [u'Add product',
@@ -567,8 +556,7 @@ class ShoppingList:
 	def quit(self):
 		self.products.save_data()
 		appuifw.app.exit_key_handler = None
-		if SYMBIAN:
-			self.script_lock.signal()
+		self.script_lock.signal()
 
 
 if __name__ == '__main__':
