@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__version__ = '2.5'
+__version__ = '2.5.1'
 __author__ = 'OD'
 __license__ = 'MIT'
 
@@ -217,7 +217,7 @@ class Products:
 		# return a list of names that are NOT checked
 		return [unicode(x['name']) for x in self._products() if not self.is_product_checked(x)]
 
-	def get_departs_list(self):
+	def get_marked_departs_list(self):
 		''' get list of departments, mark departments with checked products'''
 		to_be_marked = self._get_departs_list_with_checked_prods()
 		all_deps = [unicode(x['name']) for x in self._departs]
@@ -234,6 +234,9 @@ class Products:
 					ret.append(d['name'])
 					break
 		return ret
+
+	def get_departs_list(self):
+		return [unicode(x['name']) for x in self._departs]
 
 	def get_checked_by_dep(self, name):
 		name = self._udecorate_item(name)
@@ -380,7 +383,7 @@ class ShoppingList:
 		if self.product_mode:
 			appuifw.app.title = appuifw.app.title + u" Departments."
 			appuifw.app.menu[1] = (u'All goods', self.at_mode)
-			all_deps = self.products.get_departs_list()
+			all_deps = self.products.get_marked_departs_list()
 			self.products_list.set_list([Products.ALL_DEPARTMENTS, ] + all_deps)
 			self.product_mode = False
 		else:
